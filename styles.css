@@ -292,3 +292,107 @@ body {
         /* Giảm chiều cao trên mobile */
     }
 }
+
+/* Filter info styling */
+.filter-info {
+    background: #e8f5e9;
+    border-left: 4px solid #4caf50;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+/* Secondary button styling */
+.btn-secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+}
+
+.btn-secondary:hover {
+    box-shadow: 0 10px 30px rgba(245, 87, 108, 0.5);
+}
+
+/* Name actions - cho phép wrap trên mobile */
+.name-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .filter-info {
+        font-size: 0.85em;
+        padding: 8px 12px;
+    }
+    
+    .name-actions {
+        justify-content: stretch;
+    }
+    
+    .name-actions .btn-small {
+        flex: 1;
+        min-width: calc(50% - 5px);
+    }
+}
+
+/* Filter info styling */
+.filter-info {
+    background: #e8f5e9;
+    border-left: 4px solid #4caf50;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+/* Secondary button styling (màu hồng - Xem bị lọc) */
+.btn-secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+}
+
+.btn-secondary:hover {
+    box-shadow: 0 10px 30px rgba(245, 87, 108, 0.5);
+}
+
+/* Tertiary button styling (màu cam - Tải gốc) */
+.btn-tertiary {
+    background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+    box-shadow: 0 6px 20px rgba(255, 167, 38, 0.4);
+}
+
+.btn-tertiary:hover {
+    box-shadow: 0 10px 30px rgba(255, 167, 38, 0.5);
+}
+
+/* Name actions - cho phép wrap trên mobile */
+.name-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .filter-info {
+        font-size: 0.85em;
+        padding: 8px 12px;
+    }
+    
+    .name-actions {
+        justify-content: stretch;
+    }
+    
+    .name-actions .btn-small {
+        flex: 1 1 auto;
+        min-width: 120px;
+    }
+}

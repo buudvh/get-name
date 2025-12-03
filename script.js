@@ -27,6 +27,90 @@ function detectWebsite(url) {
     return null;
 }
 
+// Hàm kiểm tra xem chuỗi có phải tiếng Trung không
+function isChineseWord(word) {
+    return /[\u4e00-\u9fff]/.test(word);
+}
+
+// Hàm đếm số từ trong chuỗi (tách bởi khoảng trắng)
+function countWords(text) {
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+
+// Hàm kiểm tra xem từ có viết hoa chữ cái đầu không
+function isCapitalized(word) {
+    if (!word || word.length === 0) return false;
+    return word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase();
+}
+
+// Hàm kiểm tra xem có ít nhất 1 từ viết hoa trong chuỗi không
+function hasAtLeastOneCapitalizedWord(text) {
+    const words = text.trim().split(/\s+/);
+    return words.some(word => isCapitalized(word));
+}
+
+// Hàm lọc names hợp lệ cho Sangtacviet
+function filterSangtacvietNames(content) {
+    const lines = content.split('\n').filter(line => line.trim());
+    const validLines = [];
+    const invalidLines = [];
+
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+
+        // Bỏ qua dòng trống
+        if (!trimmedLine) return;
+
+        // Loại bỏ $ ở đầu nếu có
+        let processedLine = trimmedLine;
+        if (processedLine.startsWith('$')) {
+            processedLine = processedLine.substring(1);
+        }
+
+        // Tách phần tiếng Trung và tiếng Việt
+        const parts = processedLine.split('=');
+        if (parts.length !== 2) {
+            invalidLines.push({ line: trimmedLine, reason: 'Không đúng format $中文=Tiếng Việt' });
+            return;
+        }
+
+        const chinesePart = parts[0].trim();
+        const vietnamesePart = parts[1].trim();
+
+        // Đếm số ký tự tiếng Trung
+        const chineseChars = chinesePart.split('').filter(char => isChineseWord(char));
+        const chineseCharCount = chineseChars.length;
+
+        // Điều kiện 1: Loại bỏ name chỉ có 1 ký tự tiếng Trung
+        if (chineseCharCount === 1) {
+            invalidLines.push({
+                line: trimmedLine,
+                reason: `Chỉ có 1 ký tự tiếng Trung: "${chinesePart}"`
+            });
+            return;
+        }
+
+        // Điều kiện 2: Loại bỏ name không có từ tiếng Việt nào viết hoa
+        if (!hasAtLeastOneCapitalizedWord(vietnamesePart)) {
+            invalidLines.push({
+                line: trimmedLine,
+                reason: `Không có từ tiếng Việt nào viết hoa: "${vietnamesePart}"`
+            });
+            return;
+        }
+
+        // Name hợp lệ
+        validLines.push(trimmedLine);
+    });
+
+    return {
+        validContent: validLines.join('\n'),
+        validCount: validLines.length,
+        invalidCount: invalidLines.length,
+        invalidLines: invalidLines
+    };
+}
+
 // Sangtacviet functions
 function parseNamesFromJson(jsonData) {
     const names = [];
@@ -34,9 +118,17 @@ function parseNamesFromJson(jsonData) {
     if (jsonData && jsonData.result && jsonData.result.div) {
         jsonData.result.div.forEach((content, index) => {
             const title = `Gói ${index + 1}`;
+
+            // Lọc names hợp lệ
+            const filtered = filterSangtacvietNames(content);
+
             names.push({
                 title: title,
-                content: content,
+                content: filtered.validContent,
+                originalContent: content,
+                validCount: filtered.validCount,
+                invalidCount: filtered.invalidCount,
+                invalidLines: filtered.invalidLines,
                 index: index,
                 site: "sangtacviet",
             });
@@ -118,9 +210,9 @@ async function fetchWikidichData(url) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.text(); // data là HTML string
+        const data = await response.text();
         const parser = new DOMParser();
-        const htmlDoc = parser.parseFromString(data, "text/html"); // Sửa chỗ này
+        const htmlDoc = parser.parseFromString(data, "text/html");
 
         let textInput = htmlDoc.getElementById("ddListName");
         if (!textInput) {
@@ -167,31 +259,55 @@ function createNameItem(nameData) {
     const hasMore = lines.length > 8;
     const nameCount = lines.length;
 
+    // Hiển thị thông tin lọc cho Sangtacviet
+    let filterInfo = '';
+    if (nameData.site === 'sangtacviet' && nameData.invalidCount > 0) {
+        filterInfo = `<div class="filter-info">✅ ${nameData.validCount} hợp lệ | ❌ ${nameData.invalidCount} bị lọc</div>`;
+    }
+
     return `
-                <div class="name-item">
-                    <div class="name-header">
-                        <div class="name-title">${nameData.title}</div>
-                        <div class="name-meta">
-                            📊 ${nameCount} names 
-                        </div>
-                    </div>
-                    <div class="name-content">${displayContent}${hasMore ? "\n... và nhiều hơn nữa" : ""
-        }</div>
-                    <div class="name-actions">
-                        <button class="btn btn-small" onclick="downloadNameFile('${nameData.title
-        }', ${nameData.index})">
-                            📥 Tải xuống TXT
-                        </button>
-                    </div>
+        <div class="name-item">
+            <div class="name-header">
+                <div class="name-title">${nameData.title}</div>
+                <div class="name-meta">
+                    📊 ${nameCount} names 
                 </div>
-            `;
+            </div>
+            ${filterInfo}
+            <div class="name-content">${displayContent}${hasMore ? "\n... và nhiều hơn nữa" : ""}</div>
+            <div class="name-actions">
+                <button class="btn btn-small" onclick="downloadNameFile('${nameData.title}', ${nameData.index}, false)">
+                    📥 Tải name đã lọc
+                </button>
+                ${nameData.site === 'sangtacviet' && nameData.invalidCount > 0 ?
+            `<button class="btn btn-small btn-tertiary" onclick="downloadNameFile('${nameData.title}', ${nameData.index}, true)">
+                        📦 Tải name gốc
+                    </button>
+                    <button class="btn btn-small btn-secondary" onclick="showInvalidNames(${nameData.index})">
+                        🔍 Xem bị lọc
+                    </button>` : ''}
+            </div>
+        </div>
+    `;
 }
 
-function downloadNameFile(title, index) {
+function showInvalidNames(index) {
+    const nameData = currentNamesData[index];
+    if (!nameData || !nameData.invalidLines || nameData.invalidLines.length === 0) return;
+
+    const invalidList = nameData.invalidLines.map(item =>
+        `${item.line}\n  → ${item.reason}`
+    ).join('\n\n');
+
+    alert(`Names bị lọc bỏ (${nameData.invalidLines.length}):\n\n${invalidList}`);
+}
+
+function downloadNameFile(title, index, useOriginal = false) {
     const nameData = currentNamesData[index];
     if (!nameData) return;
 
-    let content = nameData.content;
+    // Chọn content gốc hoặc đã lọc
+    let content = useOriginal && nameData.originalContent ? nameData.originalContent : nameData.content;
     let filename;
 
     if (nameData.site === "wikidich") {
@@ -202,7 +318,9 @@ function downloadNameFile(title, index) {
             content = content.substring(1);
         }
         content = content.replace(/\n\$/g, "\n").replace(/\$/g, "\n");
-        filename = `${title.replace(/\s/g, "_")}_STV.txt`;
+
+        const suffix = useOriginal ? "_ORIGINAL_STV.txt" : "_FILTERED_STV.txt";
+        filename = `${title.replace(/\s/g, "_")}${suffix}`;
     }
 
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -215,7 +333,8 @@ function downloadNameFile(title, index) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showStatus(`Đã tải xuống "${title}"`, "success");
+    const fileType = useOriginal ? "gốc (chưa lọc)" : "đã lọc";
+    showStatus(`Đã tải xuống "${title}" - ${fileType}`, "success");
 }
 
 // Main fetch function
@@ -321,10 +440,16 @@ document
                 return total + lines.length;
             }, 0);
 
-            showStatus(
-                `Tìm thấy ${names.length} gói names với tổng cộng ${totalNames} names từ ${site}!`,
-                "success"
-            );
+            const totalInvalid = names.reduce((total, nameData) => {
+                return total + (nameData.invalidCount || 0);
+            }, 0);
+
+            let statusMsg = `Tìm thấy ${names.length} gói names với ${totalNames} names hợp lệ từ ${site}!`;
+            if (totalInvalid > 0) {
+                statusMsg += ` (đã lọc bỏ ${totalInvalid} names không hợp lệ)`;
+            }
+
+            showStatus(statusMsg, "success");
         } catch (error) {
             console.error("Error:", error);
             showStatus(`Lỗi: ${error.message}`, "error");
@@ -338,5 +463,6 @@ document.getElementById("urlInput").addEventListener("input", function () {
     hideStatus();
 });
 
-// Make downloadNameFile globally accessible
+// Make functions globally accessible
 window.downloadNameFile = downloadNameFile;
+window.showInvalidNames = showInvalidNames;
