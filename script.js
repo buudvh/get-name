@@ -365,7 +365,7 @@ async function getUrlFromClipboard() {
                 (trimmedText.includes("sangtacviet") ||
                     trimmedText.includes("14.225.254.182")) &&
                 trimmedText.includes("/truyen/")) ||
-            (trimmedText.includes("wikidich") && trimmedText.includes("/truyen/"))
+            (trimmedText.includes("wikicv") && trimmedText.includes("/truyen/"))
         ) {
             return trimmedText;
         }
