@@ -21,7 +21,7 @@ function hideStatus() {
 function detectWebsite(url) {
     if (url.includes("sangtacviet") || url.includes("14.225.254.182")) {
         return "sangtacviet";
-    } else if (url.includes("truyenwikidich") || url.includes("wikidich")) {
+    } else if (url.includes("truyenwikidich") || url.includes("wikidich") || url.includes("wikicv")) {
         return "wikidich";
     }
     return null;
@@ -465,4 +465,5 @@ document.getElementById("urlInput").addEventListener("input", function () {
 
 // Make functions globally accessible
 window.downloadNameFile = downloadNameFile;
+
 window.showInvalidNames = showInvalidNames;
