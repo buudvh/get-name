@@ -112,7 +112,7 @@ function filterSangtacvietNames(content) {
 }
 
 // Sangtacviet functions
-function parseNamesFromJson(jsonData) {
+function parseNamesFromJson(jsonData, bookname) {
     const names = [];
 
     if (jsonData && jsonData.result && jsonData.result.div) {
@@ -131,6 +131,7 @@ function parseNamesFromJson(jsonData) {
                 invalidLines: filtered.invalidLines,
                 index: index,
                 site: "sangtacviet",
+                bookname: bookname
             });
         });
     }
@@ -195,10 +196,42 @@ async function fetchSangtacvietData(url) {
             },
         };
 
-        return parseNamesFromJson(processedData);
+        const bookname = await fetchNamesBookSTV(host, bookhost, bookid);
+
+        return parseNamesFromJson(processedData, bookname);
     } catch (error) {
         console.error("Fetch error:", error);
         throw new Error(`Lỗi khi tải dữ liệu: ${error.message}`);
+    }
+}
+
+async function fetchNamesBookSTV(host, bookhost, bookid) {
+    const apiUrl = `${host}/truyen/${bookhost}/1/${bookid}/`;
+    const proxyUrl = `https://web.scraper.workers.dev/?url=${encodeURIComponent(
+        apiUrl
+    )}&selector=h1&scrape=text&pretty=true`;
+
+    try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        if (
+            !data ||
+            !data.result ||
+            !data.result.h1 ||
+            data.result.h1.length === 0
+        ) {
+            throw new Error("Không lấy được tên truyện");
+        }
+
+        return data.result.h1[0].replace(/[^a-zA-Z0-9\s\u00C0-\u1EF9]/g, '');
+    } catch (error) {
+        return "NoName"
     }
 }
 
@@ -276,11 +309,11 @@ function createNameItem(nameData) {
             ${filterInfo}
             <div class="name-content">${displayContent}${hasMore ? "\n... và nhiều hơn nữa" : ""}</div>
             <div class="name-actions">
-                <button class="btn btn-small" onclick="downloadNameFile('${nameData.title}', ${nameData.index}, false)">
+                <button class="btn btn-small" onclick="downloadNameFile('${nameData.site === 'sangtacviet' ? nameData.bookname : nameData.title}', ${nameData.index}, false)">
                     📥 Tải name đã lọc
                 </button>
                 ${nameData.site === 'sangtacviet' && nameData.invalidCount > 0 ?
-            `<button class="btn btn-small btn-tertiary" onclick="downloadNameFile('${nameData.title}', ${nameData.index}, true)">
+            `<button class="btn btn-small btn-tertiary" onclick="downloadNameFile('${nameData.bookname}', ${nameData.index}, true)">
                         📦 Tải name gốc
                     </button>
                     <button class="btn btn-small btn-secondary" onclick="showInvalidNames(${nameData.index})">
