@@ -19,7 +19,7 @@ function hideStatus() {
 }
 
 function detectWebsite(url) {
-    if (url.includes("sangtacviet") || url.includes("14.225.254.182")) {
+    if (url.includes("sangtacviet") || url.includes("14.225.254.182") || url.includes("103.82.20.93")) {
         return "sangtacviet";
     } else if (url.includes("truyenwikidich") || url.includes("wikidich") || url.includes("wikicv")) {
         return "wikidich";
@@ -254,16 +254,57 @@ async function fetchWikidichData(url) {
 
         let textContent = textInput.textContent || textInput.innerText;
         let outputText = [];
+        let validLines = [];
+        let invalidLines = [];
 
         textContent.split(/\r?\n/).forEach((e) => {
             const trimmed = e.trim();
             if (trimmed) {
                 outputText.push(trimmed);
+                // Tách phần tiếng Trung và tiếng Việt
+                const parts = trimmed.split('=');
+                if (parts.length !== 2) {
+                    invalidLines.push({ line: trimmed, reason: 'Không đúng format $中文=Tiếng Việt' });
+                    return;
+                }
+
+                const chinesePart = parts[0].trim();
+                const vietnamesePart = parts[1].trim();
+
+                // Đếm số ký tự tiếng Trung
+                const chineseChars = chinesePart.split('').filter(char => isChineseWord(char));
+                const chineseCharCount = chineseChars.length;
+
+                // Điều kiện 1: Loại bỏ name chỉ có 1 ký tự tiếng Trung
+                if (chineseCharCount === 1) {
+                    invalidLines.push({
+                        line: trimmed,
+                        reason: `Chỉ có 1 ký tự tiếng Trung: "${chinesePart}"`
+                    });
+                    return;
+                }
+
+                // Điều kiện 2: Loại bỏ name không có từ tiếng Việt nào viết hoa
+                if (!hasAtLeastOneCapitalizedWord(vietnamesePart)) {
+                    invalidLines.push({
+                        line: trimmed,
+                        reason: `Không có từ tiếng Việt nào viết hoa: "${vietnamesePart}"`
+                    });
+                    return;
+                }
+
+                // Name hợp lệ
+                validLines.push(trimmed);
             }
         });
 
         let content = outputText.join("\n");
         content = content.replace(/^\s*$(?:\r\n?|\n)/gm, "");
+        console.log(content);
+
+        let validContent = validLines.join("\n");
+        validContent = validContent.replace(/^\s*$(?:\r\n?|\n)/gm, "");
+        console.log(validContent);
 
         // Extract title from URL
         let name = url.split(/[/ ]+/).pop();
@@ -274,6 +315,13 @@ async function fetchWikidichData(url) {
             {
                 title: `${name}`,
                 content: content,
+                index: 0,
+                site: "wikidich",
+                originalName: name,
+            },
+            {
+                title: `${name}_filterd`,
+                content: validContent,
                 index: 0,
                 site: "wikidich",
                 originalName: name,
@@ -396,7 +444,8 @@ async function getUrlFromClipboard() {
         if (
             (trimmedText &&
                 (trimmedText.includes("sangtacviet") ||
-                    trimmedText.includes("14.225.254.182")) &&
+                    trimmedText.includes("14.225.254.182") ||
+                    trimmedText.includes("103.82.20.93")) &&
                 trimmedText.includes("/truyen/")) ||
             (trimmedText.includes("wikicv") && trimmedText.includes("/truyen/"))
         ) {
