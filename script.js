@@ -322,7 +322,7 @@ async function fetchWikidichData(url) {
             {
                 title: `${name}_filterd`,
                 content: validContent,
-                index: 0,
+                index: 1,
                 site: "wikidich",
                 originalName: name,
             },
