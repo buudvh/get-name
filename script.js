@@ -99,6 +99,15 @@ function filterSangtacvietNames(content) {
             return;
         }
 
+        // Điều kiện 3: Loại bỏ name không có tiếng trung
+        if (!hasChinese(chinesePart)) {
+            invalidLines.push({
+                line: trimmedLine,
+                reason: `Phần tiếng Trung không có tiếng Trung: "${vietnamesePart}"`
+            });
+            return;
+        }
+
         // Name hợp lệ
         validLines.push(trimmedLine);
     });
@@ -109,6 +118,11 @@ function filterSangtacvietNames(content) {
         invalidCount: invalidLines.length,
         invalidLines: invalidLines
     };
+}
+
+function hasChinese(str) {
+    const rootChineseRegex = /[\u4E00-\u9FFF]/;
+    return rootChineseRegex.test(str);
 }
 
 // Sangtacviet functions
@@ -392,7 +406,7 @@ function downloadNameFile(title, index, useOriginal = false) {
     let filename;
 
     if (nameData.site === "wikidich") {
-        filename = `Names_${nameData.originalName || "wikidich"}_.txt`;
+        filename = `${nameData.originalName || "wikidich"}.txt`;
     } else {
         // Sangtacviet
         if (content.startsWith("$")) {
