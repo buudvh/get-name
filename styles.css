@@ -424,12 +424,16 @@ body {
     font-family: monospace;
     font-size: 14px;
     line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .invalid-item {
     margin-bottom: 15px;
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
+    display: flex;
 }
 
 .reason-text { color: #e74c3c; font-style: italic; }

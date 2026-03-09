@@ -327,18 +327,16 @@ async function fetchWikidichData(url) {
 
         return [
             {
-                title: `${name}`,
+                title: name,
                 content: content,
+                content: validContent,
+                originalContent: content,
                 index: 0,
                 site: "wikidich",
                 originalName: name,
-            },
-            {
-                title: `${name}_filterd`,
-                content: validContent,
-                index: 1,
-                site: "wikidich",
-                originalName: name,
+                invalidCount: invalidLines.length,
+                invalidLines: invalidLines,
+                bookname: name,
             },
         ];
     } catch (error) {
@@ -350,9 +348,11 @@ async function fetchWikidichData(url) {
 // UI functions
 function createNameItem(nameData) {
     const lines = nameData.content.split(/\n/).filter((line) => line.trim());
+    const linesOriginal = nameData.originalContent.split(/\n/).filter((line) => line.trim());
     const displayContent = lines.slice(0, 8).join("\n");
     const hasMore = lines.length > 8;
     const nameCount = lines.length;
+    const nameOriginalCount = linesOriginal.length;
 
     // Hiển thị thông tin lọc cho Sangtacviet
     let filterInfo = '';
@@ -365,7 +365,7 @@ function createNameItem(nameData) {
             <div class="name-header">
                 <div class="name-title">${nameData.title}</div>
                 <div class="name-meta">
-                    📊 ${nameCount} names 
+                    📊 ${nameCount}/${nameOriginalCount} names 
                 </div>
             </div>
             ${filterInfo}
@@ -374,7 +374,7 @@ function createNameItem(nameData) {
                 <button class="btn btn-small" onclick="downloadNameFile('${nameData.site === 'sangtacviet' ? nameData.bookname : nameData.title}', ${nameData.index}, false)">
                     📥 Tải name đã lọc
                 </button>
-                ${nameData.site === 'sangtacviet' && nameData.invalidCount > 0 ?
+                ${nameData.invalidLines.length > 0 ?
             `<button class="btn btn-small btn-tertiary" onclick="downloadNameFile('${nameData.bookname}', ${nameData.index}, true)">
                         📦 Tải name gốc
                     </button>
@@ -386,16 +386,6 @@ function createNameItem(nameData) {
     `;
 }
 
-// function showInvalidNames(index) {
-//     const nameData = currentNamesData[index];
-//     if (!nameData || !nameData.invalidLines || nameData.invalidLines.length === 0) return;
-
-//     const invalidList = nameData.invalidLines.map(item =>
-//         `${item.line}\n  → ${item.reason}`
-//     ).join('\n\n');
-
-//     alert(`Names bị lọc bỏ (${nameData.invalidLines.length}):\n\n${invalidList}`);
-// }
 function showInvalidNames(index) {
     const nameData = currentNamesData[index];
     if (!nameData || !nameData.invalidLines || nameData.invalidLines.length === 0) return;
@@ -407,7 +397,7 @@ function showInvalidNames(index) {
     // Tạo nội dung HTML thay vì string thô
     const htmlContent = nameData.invalidLines.map(item => `
         <div class="invalid-item">
-            <strong>${item.line}</strong>
+            <div>${item.line}</div>
             <div class="reason-text">➔ ${item.reason}</div>
         </div>
     `).join('');
