@@ -314,11 +314,11 @@ async function fetchWikidichData(url) {
 
         let content = outputText.join("\n");
         content = content.replace(/^\s*$(?:\r\n?|\n)/gm, "");
-        console.log(content);
 
         let validContent = validLines.join("\n");
         validContent = validContent.replace(/^\s*$(?:\r\n?|\n)/gm, "");
-        console.log(validContent);
+
+        console.log(invalidLines);
 
         // Extract title from URL
         let name = url.split(/[/ ]+/).pop();
@@ -386,15 +386,42 @@ function createNameItem(nameData) {
     `;
 }
 
+// function showInvalidNames(index) {
+//     const nameData = currentNamesData[index];
+//     if (!nameData || !nameData.invalidLines || nameData.invalidLines.length === 0) return;
+
+//     const invalidList = nameData.invalidLines.map(item =>
+//         `${item.line}\n  → ${item.reason}`
+//     ).join('\n\n');
+
+//     alert(`Names bị lọc bỏ (${nameData.invalidLines.length}):\n\n${invalidList}`);
+// }
 function showInvalidNames(index) {
     const nameData = currentNamesData[index];
     if (!nameData || !nameData.invalidLines || nameData.invalidLines.length === 0) return;
 
-    const invalidList = nameData.invalidLines.map(item =>
-        `${item.line}\n  → ${item.reason}`
-    ).join('\n\n');
+    const modal = document.getElementById("invalidNamesModal");
+    const body = document.getElementById("invalidNamesBody");
+    const closeBtn = document.querySelector(".close-modal");
 
-    alert(`Names bị lọc bỏ (${nameData.invalidLines.length}):\n\n${invalidList}`);
+    // Tạo nội dung HTML thay vì string thô
+    const htmlContent = nameData.invalidLines.map(item => `
+        <div class="invalid-item">
+            <strong>${item.line}</strong>
+            <div class="reason-text">➔ ${item.reason}</div>
+        </div>
+    `).join('');
+
+    body.innerHTML = htmlContent;
+    modal.style.display = "block";
+
+    // Đóng modal khi click nút X
+    closeBtn.onclick = () => modal.style.display = "none";
+
+    // Đóng modal khi click ra ngoài vùng xám
+    window.onclick = (event) => {
+        if (event.target == modal) modal.style.display = "none";
+    };
 }
 
 function downloadNameFile(title, index, useOriginal = false) {
