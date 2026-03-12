@@ -128,15 +128,14 @@ function hasChinese(str) {
 // Sangtacviet functions
 function parseNamesFromJson(jsonData, bookname) {
     const names = [];
+    const bookNameBeauty = bookname.replace(/[^a-zA-Z0-9\s\u00C0-\u1EF9]/g, '')
+        .split(' ') // Tách chuỗi thành mảng dựa trên dấu gạch ngang
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Viết hoa chữ đầu mỗi từ
+        .join('');
 
     if (jsonData && jsonData.result && jsonData.result.div) {
         jsonData.result.div.forEach((content, index) => {
             const title = `${bookname} (Gói ${index + 1})`;
-
-            bookname = bookname.replace(/[^a-zA-Z0-9\s\u00C0-\u1EF9]/g, '')
-                .split(' ') // Tách chuỗi thành mảng dựa trên dấu gạch ngang
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Viết hoa chữ đầu mỗi từ
-                .join('');
 
             // Lọc names hợp lệ
             const filtered = filterSangtacvietNames(content);
@@ -150,7 +149,7 @@ function parseNamesFromJson(jsonData, bookname) {
                 invalidLines: filtered.invalidLines,
                 index: index,
                 site: "sangtacviet",
-                bookname: bookname
+                bookname: bookNameBeauty
             });
         });
     }
@@ -327,7 +326,11 @@ async function fetchWikidichData(url) {
 
         // Extract title from URL
         let name = url.split(/[/ ]+/).pop();
-        name = name
+        const title = name
+            .split('-') // Tách chuỗi thành mảng dựa trên dấu gạch ngang
+            .map(word => word.length <= 7 ? word.charAt(0).toUpperCase() + word.slice(1) : "") // Viết hoa chữ đầu mỗi từ
+            .join(' ');
+        const bookname = name
             .split('-') // Tách chuỗi thành mảng dựa trên dấu gạch ngang
             .map(word => word.length <= 7 ? word.charAt(0).toUpperCase() + word.slice(1) : "") // Viết hoa chữ đầu mỗi từ
             .join('');
@@ -336,7 +339,7 @@ async function fetchWikidichData(url) {
 
         return [
             {
-                title: name,
+                title: title,
                 content: content,
                 content: validContent,
                 originalContent: content,
@@ -345,7 +348,7 @@ async function fetchWikidichData(url) {
                 originalName: name,
                 invalidCount: invalidLines.length,
                 invalidLines: invalidLines,
-                bookname: name,
+                bookname: bookname,
             },
         ];
     } catch (error) {
@@ -380,7 +383,7 @@ function createNameItem(nameData) {
             ${filterInfo}
             <div class="name-content">${displayContent}${hasMore ? "\n... và nhiều hơn nữa" : ""}</div>
             <div class="name-actions">
-                <button class="btn btn-small" onclick="downloadNameFile('${nameData.site === 'sangtacviet' ? nameData.bookname : nameData.title}', ${nameData.index}, false)">
+                <button class="btn btn-small" onclick="downloadNameFile('${nameData.bookname}', ${nameData.index}, false)">
                     📥 Tải name đã lọc
                 </button>
                 ${nameData.invalidLines.length > 0 ?
@@ -432,7 +435,7 @@ function downloadNameFile(title, index, useOriginal = false) {
     let filename;
 
     if (nameData.site === "wikidich") {
-        filename = `${nameData.originalName || "wikidich"}.txt`;
+        filename = `${title}.txt`;
     } else {
         // Sangtacviet
         if (content.startsWith("$")) {
@@ -440,8 +443,8 @@ function downloadNameFile(title, index, useOriginal = false) {
         }
         content = content.replace(/\n\$/g, "\n").replace(/\$/g, "\n");
 
-        const suffix = useOriginal ? "_ORIGINAL_STV.txt" : "_FILTERED_STV.txt";
-        filename = `${title.replace(/\s/g, "_")}${suffix}`;
+        const suffix = useOriginal ? "ORIGINAL.txt" : "FILTERED.txt";
+        filename = `${title}_${suffix}`;
     }
 
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
