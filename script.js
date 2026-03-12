@@ -131,7 +131,12 @@ function parseNamesFromJson(jsonData, bookname) {
 
     if (jsonData && jsonData.result && jsonData.result.div) {
         jsonData.result.div.forEach((content, index) => {
-            const title = `Gói ${index + 1}`;
+            const title = `${bookname} (Gói ${index + 1})`;
+
+            bookname = bookname.replace(/[^a-zA-Z0-9\s\u00C0-\u1EF9]/g, '')
+                .split(' ') // Tách chuỗi thành mảng dựa trên dấu gạch ngang
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Viết hoa chữ đầu mỗi từ
+                .join('');
 
             // Lọc names hợp lệ
             const filtered = filterSangtacvietNames(content);
@@ -243,7 +248,7 @@ async function fetchNamesBookSTV(host, bookhost, bookid) {
             throw new Error("Không lấy được tên truyện");
         }
 
-        return data.result.h1[0].replace(/[^a-zA-Z0-9\s\u00C0-\u1EF9]/g, '');
+        return data.result.h1[0];
     } catch (error) {
         return "NoName"
     }
@@ -322,6 +327,10 @@ async function fetchWikidichData(url) {
 
         // Extract title from URL
         let name = url.split(/[/ ]+/).pop();
+        name = name
+            .split('-') // Tách chuỗi thành mảng dựa trên dấu gạch ngang
+            .map(word => word.length <= 7 ? word.charAt(0).toUpperCase() + word.slice(1) : "") // Viết hoa chữ đầu mỗi từ
+            .join('');
         let temp = name.split(/[- ]+/).pop();
         name = name.replace("-" + temp, "");
 
