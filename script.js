@@ -265,12 +265,17 @@ async function fetchWikidichData(url) {
         const parser = new DOMParser();
         const htmlDoc = parser.parseFromString(data, "text/html");
 
-        let textInput = htmlDoc.getElementById("ddListName");
-        if (!textInput) {
-            throw new Error("Không tìm thấy danh sách names trên trang này!");
-        }
+        let bookid = htmlDoc.getElementById('bookId')?.value;
 
-        let textContent = textInput.textContent || textInput.innerText;
+        const nameUrl = `https://wikicv.net/name-list?bookId=${bookid}&id=COMMON`;
+        const responseName = await fetch(nameUrl);
+        if (!responseName.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const jsonData = await responseName.json();
+        const htmlDocName = parser.parseFromString(jsonData.data.content, "text/html");
+
+        let textContent = htmlDocName.body.innerText || '';
         let outputText = [];
         let validLines = [];
         let invalidLines = [];
